@@ -1,20 +1,48 @@
 ---
 title: "Lab 08 - University of Edinburgh Art Collection"
-author: "Insert your name here"
-date: "Insert date here"
+author: "Fanyi Zeng"
+date: "03/11/22"
 output: github_document
 ---
 
 ### Load packages and data
 
 ```{r load-packages, message = FALSE}
-library(tidyverse) 
-library(skimr)
+library(robotstxt)
+library(rvest)
 ```
 
 ```{r load-data, message = FALSE, eval = FALSE}
-# Remove eval = FALSE or set it to TRUE once data is ready to be loaded
-uoe_art <- read_csv("data/uoe-art.csv")
+paths_allowed("https://collections.ed.ac.uk/art)")
+```
+
+### Read the page
+
+```{r url}
+# set url
+first_url <- "https://collections.ed.ac.uk/art/search/*:*/Collection:%22edinburgh+college+of+art%7C%7C%7CEdinburgh+College+of+Art%22?offset=0"
+# read html page
+page <- read_html(first_url)
+```
+
+### Save the titles
+
+```{r titles}
+titles <- page %>%
+  html_nodes(".iteminfo") %>%
+  html_node("h3 a") %>%
+  html_text() %>%
+  str_squish()
+```
+
+### Save the attributes
+
+```{r url}
+page %>%
+  html_nodes(".iteminfo") %>%   # same nodes
+  html_node("h3 a") %>%         # as before
+  html_attr("href") %>%         # but get href attribute instead of text
+  str_replace(".", "https://collections.ed.ac.uk/art")
 ```
 
 ### Exercise 9
