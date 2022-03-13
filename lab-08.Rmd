@@ -11,6 +11,8 @@ output: github_document
 library(robotstxt)
 library(rvest)
 library(tidyverse)
+library(dplyr)
+library(skimr)
 ```
 
 ```{r load-data, message = FALSE, eval = FALSE}
@@ -156,30 +158,99 @@ first_page <- scrape_page(first_url)
 second_page <- scrape_page(second_url)
 ```
 
-### Iteration
+### Iteration, mapping, & saving as csv
 
 ```{r iterate}
-paste0("https://collections.ed.ac.uk/art/search/*:*/Collection:%22edinburgh+college+of+art%7C%7C%7CEdinburgh+College+of+Art%22?offset=",seq(0,2900,by=10))
-
+urls <- paste0("https://collections.ed.ac.uk/art/search/*:*/Collection:%22edinburgh+college+of+art%7C%7C%7CEdinburgh+College+of+Art%22?offset=",seq(0,2980,by=10))
+urls
 ```
-### Exercise 9
+
+I am converting the following code into comments because it is going to take a long time knitting. I already have the dataframe saved in my folder.
+
+```{r mapping}
+#uoe_art <- map_dfr(urls, scrape_page)
+#uoe_art
+```
+
+```{r save}
+#write.csv(uoe_art, "uoe_art.csv",row.names = F)
+```
+
+### Read my saved data
+
+```{r read}
+uoe_art <- read_csv("uoe_art.csv")
+```
+
+### Separating title and date
 
 ```{r separate-title-date, error = TRUE}
 uoe_art <- uoe_art %>%
   separate(title, into = c("title", "date"), sep = "\\(") %>%
   mutate(year = str_remove(date, "\\)") %>% as.numeric()) %>%
-  select(title, artist, year, ___)
+  select(title, artist, year, link)
 ```
 
-### Exercise 10
+The warnings tell us three things: 1. there are redundant art pieces (with the same title and year); 2. there are art pieces with missing titles or artists (which are then filled with "NA"); 3. there are art pieces with missing years (which are then filled with "NA").
 
-Remove this text, and add your answer for Exercise 10 here.
-Add code chunks as needed.
-Don't forget to label your code chunk.
-Do not use spaces in code chunk labels.
+### Analysis
 
-### Exercise 11
+115 pieces are missing artist info, and 1411 pieces missing year info.
 
-...
+```{r sum}
+skim(uoe_art)
+```
 
-Add exercise headings as needed.
+There is an art piece out of the ordinary - it has a year of "2". This happened because the art piece has two numbers, "2" and "1964". We will need to correct its year to "1964".
+
+```{r bar}
+uoe_art %>%
+  ggplot(aes(x=year)) +
+  geom_histogram()
+```
+
+There are two ways to correct the year: if_else and case_when.
+
+Using if_else:
+
+```{r ifelse}
+uoe_art_2 <- uoe_art %>%
+  mutate(year=if_else(year==2, 1964, year, NA_real_))
+```
+
+Using case_when:
+
+```{r casewhen}
+uoe_art_new <- uoe_art %>%
+  mutate(year = case_when(
+    year == 2 ~ 1964,
+    year != 2 ~ year))
+```
+
+I limit the years to between 1820 (min) and 2020 (max) and make a new histogram. Either uoe_art_new or uoe_art_2 will work. They are the same.
+
+```{r newbar}
+uoe_art_new %>%
+  ggplot(aes(x=year)) +
+  geom_histogram(binwidth=10) +
+  xlim(1819,2020) +
+  labs(title = "University of Edinburgh Artwork Collection (1819~2020)", subtitle = "As of 03/13/2022", x = "Year of Artwork Pieces", y = "Number of Artwork Pieces")
+```
+
+The most featured known artist is Emma Gillies. From this website (https://www.ed.ac.uk/news/2014/emma-gillies-031214), I learned that her family was renown in the art field in 20th century and very closely related to the U of Edinburgh. Emma was a ceramic student there, and her brother William was a teacher for 40 years as well as the Principal for 6 tears.
+
+```{r count}
+uoe_art_new %>%
+  count(artist) %>%
+  arrange(desc(n))
+```
+
+11 pieces have the word "child" in them.
+
+```{r child}
+uoe_art_new %>%
+  filter(
+  str_detect(title, "child")|
+  str_detect(title, "Child")
+  )
+```
