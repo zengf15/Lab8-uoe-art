@@ -114,7 +114,7 @@ artists2
 
 ### Create a dataframe
 
-```{r df1}
+```{r df2}
 second_ten <- tibble(
   title = titles2,
   artist = artists2,
@@ -162,7 +162,6 @@ second_page <- scrape_page(second_url)
 
 ```{r iterate}
 urls <- paste0("https://collections.ed.ac.uk/art/search/*:*/Collection:%22edinburgh+college+of+art%7C%7C%7CEdinburgh+College+of+Art%22?offset=",seq(0,2980,by=10))
-urls
 ```
 
 I am converting the following code into comments because it is going to take a long time knitting. I already have the dataframe saved in my folder.
